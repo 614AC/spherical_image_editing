@@ -225,13 +225,17 @@ def apply_SL2C_elt_to_image(M, source_image_filename, out_x_size = None, save_fi
       o_im[i,j] = get_interpolated_pixel_colour(pt, s_im, x_size = in_x_size)
   out_image.save(save_filename)
 
-def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_image_filename, out_x_size = None, twist = False, zoom_loop_value = 0.0, save_filename = "sphere_transforms_test.png"):
+def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_image_filename_A, source_image_filename_B, out_x_size = None, twist = False, zoom_loop_value = 0.0, save_filename = "sphere_transforms_test.png"):
   """produces a zooming Droste effect image from an equirectangular source image"""
   # The source image should be a composite of the original image together with a zoomed version, 
   # fit inside a picture frame or similar in the original image
-  source_image = Image.open(source_image_filename)
-  s_im = source_image.load()
-  in_x_size, in_y_size = source_image.size
+  source_image_a = Image.open(source_image_filename_A)
+  source_image_b = Image.open(source_image_filename_B)
+  
+  s_im_a = source_image_a.load()
+  s_im_b = source_image_b.load()
+  
+  in_x_size, in_y_size = source_image_a.size
   
   M_rot = rotate_pixel_coords_p_to_q(zoom_center_pixel_coords, (0,0), x_size = in_x_size)
   M_rot_inv = matrix2_inv(M_rot)
@@ -267,6 +271,9 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
       # zoom_cutoff alters the slice of the input image that we use, so that it covers mostly the original image, together with 
       # some of the zoomed image that was composited with the original. The slice needs to cover the seam between the two
       # (i.e. the picture frame you are using, but should cover as little as possible of the zoomed version of the image.
+      
+      even = ((pt.real + zoom_cutoff) // log(zoom_factor)) % 2 == 0
+      
       pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff, pt.imag) 
       pt = cmath.exp(pt)
       pt = [pt, 1] #back to projective coordinates
@@ -274,7 +281,13 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
       pt = sphere_from_CP1(pt)
       pt = angles_from_sphere(pt)
       pt = pixel_coords_from_angles(pt, x_size = in_x_size)
-      o_im[i,j] = get_interpolated_pixel_colour(pt, s_im, in_x_size)
+      
+      if(even):
+        o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_a, in_x_size)
+      else:
+        o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
+        
+      
 
   out_image.save(save_filename)
 
@@ -327,8 +340,8 @@ if __name__ == "__main__":
 
   ###### Apply transformations to single frames
 
-  M = zoom_in_on_pixel_coords((360,179.5), 2, x_size = 720) 
-  apply_SL2C_elt_to_image( M, 'equirectangular_test_image.png', save_filename = 'scaled_test_image.png' )
+  #M = zoom_in_on_pixel_coords((360,179.5), 2, x_size = 720) 
+  #apply_SL2C_elt_to_image( M, 'equirectangular_test_image.png', save_filename = 'scaled_test_image.png' )
 
   # M = rotate_around_axis_pixel_coord_p((360,179.5), pi/8, x_size = 720)
   # apply_SL2C_elt_to_image( M, 'equirectangular_test_image.png', save_filename = 'rotated_test_image.png' )
@@ -353,6 +366,14 @@ if __name__ == "__main__":
   #   zoom_loop_value = float(i)/float(num_frames)
   #   droste_effect((2650,1300), 7.3, 1.0, '(elevr+h)x2_one_zoom_7.3.png', out_x_size = 1920, twist = False, zoom_loop_value = zoom_loop_value, save_filename = "droste_straight_anim_frames/droste_anim_straight_" + str(i).zfill(3) + ".png")
   #   droste_effect((2650,1300), 7.3, 1.0, '(elevr+h)x2_one_zoom_7.3.png', out_x_size = 1920, twist = True, zoom_loop_value = zoom_loop_value, save_filename = "droste_twist_anim_frames/droste_anim_twist_" + str(i).zfill(3) + ".png")
+  
+  num_frames = 5
+  for i in range(1, num_frames):
+    #zoom_loop_value = float(i)/float(num_frames)
+    zoom_loop_value = float(0.5) # walf way through transition
+    print float(i)
+    #droste_effect((2650,1300), float(i), 1.0, '(elevr+h)x2_one_zoom_7.3.png', out_x_size = 1920, twist = False, zoom_loop_value = zoom_loop_value, save_filename = "droste_straight_anim_frames/droste_anim_straight_zoomfactorVariablePoint0_" + str(i).zfill(3) + ".png")
+    droste_effect((2650,1300), 7.3, float(i), '(elevr+h)x2_one_zoom_7.3.png', 'BBCWestminsterFrame.png', out_x_size = 1000, twist = False, zoom_loop_value = zoom_loop_value, save_filename = "droste_straight_anim_frames/droste_zoom_cutoff_" + str(i).zfill(3) + ".png")
 
 
 
