@@ -260,10 +260,10 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
       
       # need to identify boolean that switches on/off recursion
       
-      mess_with_image = ((pt_temp.real + zoom_cutoff) // log(zoom_factor) - zoom_cutoff) % 2 == 0
-      even = False
+      recurse_value = (pt_temp.real + zoom_cutoff) // log(zoom_factor)
+      dont_recurse_into_image = (recurse_value < -1.0 or recurse_value > 0.0)
       
-      if(mess_with_image):
+      if(not(dont_recurse_into_image)):
         pt = matrix_mult_vector(M_rot, pt)
       
         # if ever you don't know how to do some operation in complex projective coordinates, it's almost certainly 
@@ -280,7 +280,6 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
         # some of the zoomed image that was composited with the original. The slice needs to cover the seam between the two
         # (i.e. the picture frame you are using, but should cover as little as possible of the zoomed version of the image.
       
-        # print ((pt.real + zoom_cutoff) / log(zoom_factor))
         even = ((pt.real + zoom_cutoff) // log(zoom_factor)) % 2 == 0
       
         pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff, pt.imag)
@@ -292,14 +291,21 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
       pt = sphere_from_CP1(pt)
       pt = angles_from_sphere(pt)
       pt = pixel_coords_from_angles(pt, x_size = in_x_size)
-      
-      if(even):
-        o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_a, in_x_size)
+    
+      if(not(dont_recurse_into_image)):
+        if(even):
+          o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_a, in_x_size)
+        else:
+          o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
       else:
-        o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
+        if(recurse_value > 0.0):
+          o_im[i,j] = (0, int(recurse_value * 50), 0) # get_interpolated_pixel_colour(pt, s_im_a, in_x_size)
+        else:
+          o_im[i,j] = (int(recurse_value * -50), 0, 0) # get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
         
+    
       
-      o_im[i,j] = (((pt_temp.real + zoom_cutoff + 1.0) // log(zoom_factor)) * 100.0,0,0)
+      
       
       
 
