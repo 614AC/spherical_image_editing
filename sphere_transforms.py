@@ -299,7 +299,7 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
         o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
         
       
-      o_im[i,j] = (((pt_temp.real + zoom_cutoff) % log(zoom_factor)) * 100.0,0,0)
+      o_im[i,j] = (((pt_temp.real + zoom_cutoff + 1.0) // log(zoom_factor)) * 100.0,0,0)
       
       
 
