@@ -246,38 +246,49 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
   out_image = Image.new("RGB", (out_x_size, out_y_size))
   o_im = out_image.load()
 
-  droste_factor = ( cmath.log(zoom_factor) + complex(0, 2*pi) ) / complex(0, 2*pi)  # used if twisting 
-
   for i in range(out_x_size): 
     for j in range(out_y_size):
       pt = (i,j)
       pt = angles_from_pixel_coords(pt, x_size = out_x_size)
       pt = sphere_from_angles(pt)
       pt = CP1_from_sphere(pt)
-      pt = matrix_mult_vector(M_rot, pt)
+      
+      pt_temp = matrix_mult_vector(M_rot, pt)
+      pt_temp = pt_temp[0]/pt_temp[1]
+      pt_temp = cmath.log(pt_temp)
+      # print ((pt_temp.real + zoom_cutoff) // log(zoom_factor))
+      
+      # need to identify boolean that switches on/off recursion
+      
+      mess_with_image = ((pt_temp.real + zoom_cutoff) // log(zoom_factor) - zoom_cutoff) % 2 == 0
+      even = False
+      
+      if(mess_with_image):
+        pt = matrix_mult_vector(M_rot, pt)
+      
+        # if ever you don't know how to do some operation in complex projective coordinates, it's almost certainly 
+        # safe to just switch back to ordinary complex numbers by pt = pt[0]/pt[1]. The only danger is if pt[1] == 0, 
+        # or is near enough to cause floating point errors. In this application, you are probably fine unless you 
+        # make some very specific choices of where to zoom to etc. 
+        pt = pt[0]/pt[1]  
+        pt = cmath.log(pt)
 
-      # if ever you don't know how to do some operation in complex projective coordinates, it's almost certainly 
-      # safe to just switch back to ordinary complex numbers by pt = pt[0]/pt[1]. The only danger is if pt[1] == 0, 
-      # or is near enough to cause floating point errors. In this application, you are probably fine unless you 
-      # make some very specific choices of where to zoom to etc. 
-      pt = pt[0]/pt[1]  
-      pt = cmath.log(pt)
-      if twist:  # otherwise straight zoom
-        pt = droste_factor * pt  
-
-      # zoom_loop_value is between 0 and 1, vary this from 0.0 to 1.0 to animate frames zooming into the droste image
-      pt = complex(pt.real + log(zoom_factor) * zoom_loop_value, pt.imag) 
+        # zoom_loop_value is between 0 and 1, vary this from 0.0 to 1.0 to animate frames zooming into the droste image
+        pt = complex(pt.real + log(zoom_factor) * zoom_loop_value, pt.imag) 
       
-      # zoom_cutoff alters the slice of the input image that we use, so that it covers mostly the original image, together with 
-      # some of the zoomed image that was composited with the original. The slice needs to cover the seam between the two
-      # (i.e. the picture frame you are using, but should cover as little as possible of the zoomed version of the image.
+        # zoom_cutoff alters the slice of the input image that we use, so that it covers mostly the original image, together with 
+        # some of the zoomed image that was composited with the original. The slice needs to cover the seam between the two
+        # (i.e. the picture frame you are using, but should cover as little as possible of the zoomed version of the image.
       
-      even = ((pt.real + zoom_cutoff) // log(zoom_factor)) % 2 == 0
+        # print ((pt.real + zoom_cutoff) / log(zoom_factor))
+        even = ((pt.real + zoom_cutoff) // log(zoom_factor)) % 2 == 0
       
-      pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff, pt.imag) 
-      pt = cmath.exp(pt)
-      pt = [pt, 1] #back to projective coordinates
-      pt = matrix_mult_vector(M_rot_inv, pt)
+        pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff, pt.imag)
+        pt = cmath.exp(pt)
+        pt = [pt, 1] #back to projective coordinates
+      
+        pt = matrix_mult_vector(M_rot_inv, pt)
+      
       pt = sphere_from_CP1(pt)
       pt = angles_from_sphere(pt)
       pt = pixel_coords_from_angles(pt, x_size = in_x_size)
@@ -287,6 +298,9 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
       else:
         o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
         
+      
+      o_im[i,j] = (((pt_temp.real + zoom_cutoff) // log(zoom_factor)) * 100.0,0,0)
+      
       
 
   out_image.save(save_filename)
@@ -367,13 +381,24 @@ if __name__ == "__main__":
   #   droste_effect((2650,1300), 7.3, 1.0, '(elevr+h)x2_one_zoom_7.3.png', out_x_size = 1920, twist = False, zoom_loop_value = zoom_loop_value, save_filename = "droste_straight_anim_frames/droste_anim_straight_" + str(i).zfill(3) + ".png")
   #   droste_effect((2650,1300), 7.3, 1.0, '(elevr+h)x2_one_zoom_7.3.png', out_x_size = 1920, twist = True, zoom_loop_value = zoom_loop_value, save_filename = "droste_twist_anim_frames/droste_anim_twist_" + str(i).zfill(3) + ".png")
   
-  num_frames = 5
-  for i in range(1, num_frames):
-    #zoom_loop_value = float(i)/float(num_frames)
-    zoom_loop_value = float(0.5) # walf way through transition
+  
+  #ME: 
+  # second argument controls how big the circle into the next space is (Actually, I think it's how zoomed in it is at the start (i.e. how much along the path we've already moved) - this is based on the line where zoom_factor is added to the real component before it's multiplied by zoom_loop_value (which controls how far through the animation we are))
+  # third arg... controls how zoomed it is on the other side, maybe?
+  
+  num_frames = 1
+  for i in range(num_frames):
     print float(i)
-    #droste_effect((2650,1300), float(i), 1.0, '(elevr+h)x2_one_zoom_7.3.png', out_x_size = 1920, twist = False, zoom_loop_value = zoom_loop_value, save_filename = "droste_straight_anim_frames/droste_anim_straight_zoomfactorVariablePoint0_" + str(i).zfill(3) + ".png")
-    droste_effect((2650,1300), 7.3, float(i), '(elevr+h)x2_one_zoom_7.3.png', 'BBCWestminsterFrame.png', out_x_size = 1000, twist = False, zoom_loop_value = zoom_loop_value, save_filename = "droste_straight_anim_frames/droste_zoom_cutoff_" + str(i).zfill(3) + ".png")
+    zoom_loop_value = (float(i)/float(num_frames)) * -1.0
+    droste_effect((2316,973), 4.0, 1.0, 'sissinghurst/original/S11_LymeWalkBottom.jpg', 'sissinghurst/original/S10_LymeWalkMid.jpg', out_x_size = 500, twist = False, zoom_loop_value = zoom_loop_value, save_filename = "sissinghurst/anim/s_droste_anim_straight_" + str(i).zfill(3) + ".png")
+  
+  #num_frames = 5
+  #for i in range(1, num_frames):
+  #  #zoom_loop_value = float(i)/float(num_frames)
+  #  zoom_loop_value = float(0.5) # walf way through transition
+  #  print float(i)
+  #  #droste_effect((2650,1300), float(i), 1.0, '(elevr+h)x2_one_zoom_7.3.png', out_x_size = 1920, twist = False, zoom_loop_value = zoom_loop_value, save_filename = "droste_straight_anim_frames/droste_anim_straight_zoomfactorVariablePoint0_" + str(i).zfill(3) + ".png")
+  #  droste_effect((2650,1300), 7.3, float(i), '(elevr+h)x2_one_zoom_7.3.png', 'BBCWestminsterFrame.png', out_x_size = 1000, twist = False, zoom_loop_value = zoom_loop_value, save_filename = "droste_straight_anim_frames/droste_zoom_cutoff_" + str(i).zfill(3) + ".png")
 
 
 
