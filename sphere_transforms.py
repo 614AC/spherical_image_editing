@@ -251,6 +251,9 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
       pt = (i,j)
       pt = angles_from_pixel_coords(pt, x_size = out_x_size)
       pt = sphere_from_angles(pt)
+      
+      pt_save_for_later = CP1_from_sphere(pt)
+      
       pt = CP1_from_sphere(pt)
       
       pt_temp = matrix_mult_vector(M_rot, pt)
@@ -275,7 +278,7 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
 
         # zoom_loop_value is between 0 and 1, vary this from 0.0 to 1.0 to animate frames zooming into the droste image
         pt = complex(pt.real + log(zoom_factor) * zoom_loop_value, pt.imag) 
-      
+        
         # zoom_cutoff alters the slice of the input image that we use, so that it covers mostly the original image, together with 
         # some of the zoomed image that was composited with the original. The slice needs to cover the seam between the two
         # (i.e. the picture frame you are using, but should cover as little as possible of the zoomed version of the image.
@@ -299,11 +302,23 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
           o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
       else:
         if(recurse_value > 0.0):
+          pt = matrix_mult_vector(M_rot, pt_save_for_later)
+          pt = pt[0]/pt[1]  
+          pt = cmath.log(pt)
+          pt = complex(pt.real + log(zoom_factor) * zoom_loop_value, pt.imag)
+          pt = cmath.exp(pt)
+          pt = [pt, 1] #back to projective coordinates
+          pt = matrix_mult_vector(M_rot_inv, pt)
+          pt = sphere_from_CP1(pt)
+          pt = angles_from_sphere(pt)
+          pt = pixel_coords_from_angles(pt, x_size = in_x_size)
+          o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
           o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_a, in_x_size)
         else:
-          # this is going into the future. There is a bug that the future sphere needs to be warped!
-          pt = complex(pt_temp.real + log(zoom_factor) * zoom_loop_value, pt_temp.imag)
-          pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff, pt.imag)
+          pt = matrix_mult_vector(M_rot, pt_save_for_later)
+          pt = pt[0]/pt[1]  
+          pt = cmath.log(pt)
+          pt = complex(pt.real + log(zoom_factor) * zoom_loop_value, pt.imag)
           pt = cmath.exp(pt)
           pt = [pt, 1] #back to projective coordinates
           pt = matrix_mult_vector(M_rot_inv, pt)
@@ -396,11 +411,11 @@ if __name__ == "__main__":
   # second argument controls how big the circle into the next space is (Actually, I think it's how zoomed in it is at the start (i.e. how much along the path we've already moved) - this is based on the line where zoom_factor is added to the real component before it's multiplied by zoom_loop_value (which controls how far through the animation we are))
   # third arg... controls how zoomed it is on the other side, maybe?
   
-  num_frames = 1
+  num_frames = 10
   for i in range(num_frames):
     print float(i)
     zoom_loop_value = (float(i)/float(num_frames)) * -1.0
-    droste_effect((2316,973), 4.0, 1.0, 'sissinghurst/original/S11_LymeWalkBottom.jpg', 'sissinghurst/original/S10_LymeWalkMid.jpg', out_x_size = 2000, twist = False, zoom_loop_value = zoom_loop_value, save_filename = "sissinghurst/anim/s_droste_anim_straight_" + str(i).zfill(3) + ".png")
+    droste_effect((2316,973), 4.0, 1.0, 'sissinghurst/original/S11_LymeWalkBottom.jpg', 'sissinghurst/original/S10_LymeWalkMid.jpg', out_x_size = 500, twist = False, zoom_loop_value = zoom_loop_value, save_filename = "sissinghurst/anim/s_droste_anim_straight_" + str(i).zfill(3) + ".png")
   
   #num_frames = 5
   #for i in range(1, num_frames):
