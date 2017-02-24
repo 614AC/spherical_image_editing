@@ -258,9 +258,9 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
       pt_temp = cmath.log(pt_temp)
       # print ((pt_temp.real + zoom_cutoff) // log(zoom_factor))
       
-      # need to identify boolean that switches on/off recursion
-      
+      #  boolean that switches on/off recursion
       recurse_value = (pt_temp.real + zoom_cutoff) // log(zoom_factor)
+      # values -1 to 0 are the current sphere, values 0 to 1 are the next sphere. < -1 is earlier spheres, > 1 are future spheres
       dont_recurse_into_image = (recurse_value < -1.0 or recurse_value > 0.0)
       
       if(not(dont_recurse_into_image)):
@@ -299,15 +299,19 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
           o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
       else:
         if(recurse_value > 0.0):
-          o_im[i,j] = (0, int(recurse_value * 50), 0) # get_interpolated_pixel_colour(pt, s_im_a, in_x_size)
+          o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_a, in_x_size)
         else:
-          o_im[i,j] = (int(recurse_value * -50), 0, 0) # get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
+          # this is going into the future. There is a bug that the future sphere needs to be warped!
+          pt = complex(pt_temp.real + log(zoom_factor) * zoom_loop_value, pt_temp.imag)
+          pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff, pt.imag)
+          pt = cmath.exp(pt)
+          pt = [pt, 1] #back to projective coordinates
+          pt = matrix_mult_vector(M_rot_inv, pt)
+          pt = sphere_from_CP1(pt)
+          pt = angles_from_sphere(pt)
+          pt = pixel_coords_from_angles(pt, x_size = in_x_size)
+          o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
         
-    
-      
-      
-      
-      
 
   out_image.save(save_filename)
 
@@ -396,7 +400,7 @@ if __name__ == "__main__":
   for i in range(num_frames):
     print float(i)
     zoom_loop_value = (float(i)/float(num_frames)) * -1.0
-    droste_effect((2316,973), 4.0, 1.0, 'sissinghurst/original/S11_LymeWalkBottom.jpg', 'sissinghurst/original/S10_LymeWalkMid.jpg', out_x_size = 500, twist = False, zoom_loop_value = zoom_loop_value, save_filename = "sissinghurst/anim/s_droste_anim_straight_" + str(i).zfill(3) + ".png")
+    droste_effect((2316,973), 4.0, 1.0, 'sissinghurst/original/S11_LymeWalkBottom.jpg', 'sissinghurst/original/S10_LymeWalkMid.jpg', out_x_size = 2000, twist = False, zoom_loop_value = zoom_loop_value, save_filename = "sissinghurst/anim/s_droste_anim_straight_" + str(i).zfill(3) + ".png")
   
   #num_frames = 5
   #for i in range(1, num_frames):
