@@ -225,6 +225,61 @@ def apply_SL2C_elt_to_image(M, source_image_filename, out_x_size = None, save_fi
       o_im[i,j] = get_interpolated_pixel_colour(pt, s_im, x_size = in_x_size)
   out_image.save(save_filename)
 
+
+def droste_effect_original(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_image_filename, out_x_size = None, twist = False, zoom_loop_value = 0.0, save_filename = "sphere_transforms_test.png"):
+  """produces a zooming Droste effect image from an equirectangular source image"""
+  # The source image should be a composite of the original image together with a zoomed version, 
+  # fit inside a picture frame or similar in the original image
+  source_image = Image.open(source_image_filename)
+  s_im = source_image.load()
+  in_x_size, in_y_size = source_image.size
+  
+  M_rot = rotate_pixel_coords_p_to_q(zoom_center_pixel_coords, (0,0), x_size = in_x_size)
+  M_rot_inv = matrix2_inv(M_rot)
+  if out_x_size == None:
+    out_x_size, out_y_size = source_image.size
+  else:
+    out_y_size = out_x_size/2
+  out_image = Image.new("RGB", (out_x_size, out_y_size))
+  o_im = out_image.load()
+
+  droste_factor = ( cmath.log(zoom_factor) + complex(0, 2*pi) ) / complex(0, 2*pi)  # used if twisting 
+
+  for i in range(out_x_size): 
+    for j in range(out_y_size):
+      pt = (i,j)
+      pt = angles_from_pixel_coords(pt, x_size = out_x_size)
+      pt = sphere_from_angles(pt)
+      pt = CP1_from_sphere(pt)
+      pt = matrix_mult_vector(M_rot, pt)
+
+      # if ever you don't know how to do some operation in complex projective coordinates, it's almost certainly 
+      # safe to just switch back to ordinary complex numbers by pt = pt[0]/pt[1]. The only danger is if pt[1] == 0, 
+      # or is near enough to cause floating point errors. In this application, you are probably fine unless you 
+      # make some very specific choices of where to zoom to etc. 
+      pt = pt[0]/pt[1]  
+      pt = cmath.log(pt)
+      if twist:  # otherwise straight zoom
+        pt = droste_factor * pt  
+
+      # zoom_loop_value is between 0 and 1, vary this from 0.0 to 1.0 to animate frames zooming into the droste image
+      pt = complex(pt.real + log(zoom_factor) * zoom_loop_value, pt.imag) 
+      
+      # zoom_cutoff alters the slice of the input image that we use, so that it covers mostly the original image, together with 
+      # some of the zoomed image that was composited with the original. The slice needs to cover the seam between the two
+      # (i.e. the picture frame you are using, but should cover as little as possible of the zoomed version of the image.
+      pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff, pt.imag) 
+      pt = cmath.exp(pt)
+      pt = [pt, 1] #back to projective coordinates
+      pt = matrix_mult_vector(M_rot_inv, pt)
+      pt = sphere_from_CP1(pt)
+      pt = angles_from_sphere(pt)
+      pt = pixel_coords_from_angles(pt, x_size = in_x_size)
+      o_im[i,j] = get_interpolated_pixel_colour(pt, s_im, in_x_size)
+
+  out_image.save(save_filename)
+
+
 def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_image_filename_A, source_image_filename_B, out_x_size = None, twist = False, zoom_loop_value = 0.0, save_filename = "sphere_transforms_test.png"):
   """produces a zooming Droste effect image from an equirectangular source image"""
   # The source image should be a composite of the original image together with a zoomed version, 
@@ -252,8 +307,8 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
       pt = angles_from_pixel_coords(pt, x_size = out_x_size)
       pt = sphere_from_angles(pt)
       
+      # keep the point for later in case we shouldn't be recusing
       pt_save_for_later = CP1_from_sphere(pt)
-      
       pt = CP1_from_sphere(pt)
       
       pt_temp = matrix_mult_vector(M_rot, pt)
@@ -302,6 +357,7 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
           o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
       else:
         if(recurse_value > 0.0):
+          # this is previous spheres. We need to warp the sphere so it animated correctly, so we use the above but without the line that does the recursion
           pt = matrix_mult_vector(M_rot, pt_save_for_later)
           pt = pt[0]/pt[1]  
           pt = cmath.log(pt)
@@ -315,10 +371,12 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
           o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
           o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_a, in_x_size)
         else:
+          # this is the next sphere 
           pt = matrix_mult_vector(M_rot, pt_save_for_later)
           pt = pt[0]/pt[1]  
           pt = cmath.log(pt)
           pt = complex(pt.real + log(zoom_factor) * zoom_loop_value, pt.imag)
+          pt = complex((pt.real ) % log(zoom_factor), pt.imag)
           pt = cmath.exp(pt)
           pt = [pt, 1] #back to projective coordinates
           pt = matrix_mult_vector(M_rot_inv, pt)
