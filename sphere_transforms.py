@@ -338,7 +338,7 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
         # some of the zoomed image that was composited with the original. The slice needs to cover the seam between the two
         # (i.e. the picture frame you are using, but should cover as little as possible of the zoomed version of the image.
       
-        even = ((pt.real + zoom_cutoff) // log(zoom_factor)) % 2 == 0
+        #even = ((pt.real + zoom_cutoff) // log(zoom_factor)) % 2 == 0
       
         pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff, pt.imag)
         pt = cmath.exp(pt)
@@ -350,40 +350,38 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
       pt = angles_from_sphere(pt)
       pt = pixel_coords_from_angles(pt, x_size = in_x_size)
     
-      if(not(dont_recurse_into_image)):
-        if(even):
-          o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_a, in_x_size)
-        else:
-          o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
-      else:
-        if(recurse_value > 0.0):
-          # this is previous spheres. We need to warp the sphere so it animated correctly, so we use the above but without the line that does the recursion
-          pt = matrix_mult_vector(M_rot, pt_save_for_later)
-          pt = pt[0]/pt[1]  
-          pt = cmath.log(pt)
-          pt = complex(pt.real + log(zoom_factor) * zoom_loop_value, pt.imag)
-          pt = cmath.exp(pt)
-          pt = [pt, 1] #back to projective coordinates
-          pt = matrix_mult_vector(M_rot_inv, pt)
-          pt = sphere_from_CP1(pt)
-          pt = angles_from_sphere(pt)
-          pt = pixel_coords_from_angles(pt, x_size = in_x_size)
-          
-          o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_a, in_x_size)
-        else: # NB here recuse value is mostly -2, sometimes -3
-          # this is the next sphere 
-          pt = matrix_mult_vector(M_rot, pt_save_for_later)
-          pt = pt[0]/pt[1]  
-          pt = cmath.log(pt)
-          pt = complex(pt.real + log(zoom_factor) * zoom_loop_value, pt.imag)
-          pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff, pt.imag) 
-          pt = cmath.exp(pt)
-          pt = [pt, 1] #back to projective coordinates
-          pt = matrix_mult_vector(M_rot_inv, pt)
-          pt = sphere_from_CP1(pt)
-          pt = angles_from_sphere(pt)
-          pt = pixel_coords_from_angles(pt, x_size = in_x_size)
-          o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
+      if(recurse_value > -1 and recurse_value <= 0):
+        o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_a, in_x_size)
+      elif (recurse_value > 0 and recurse_value <= 1):
+        o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
+      elif (recurse_value > 1.0):
+        # this is previous spheres. We need to warp the sphere so it animated correctly, so we use the above but without the line that does the recursion
+        pt = matrix_mult_vector(M_rot, pt_save_for_later)
+        pt = pt[0]/pt[1]  
+        pt = cmath.log(pt)
+        pt = complex(pt.real + log(zoom_factor) * zoom_loop_value, pt.imag)
+        pt = cmath.exp(pt)
+        pt = [pt, 1] #back to projective coordinates
+        pt = matrix_mult_vector(M_rot_inv, pt)
+        pt = sphere_from_CP1(pt)
+        pt = angles_from_sphere(pt)
+        pt = pixel_coords_from_angles(pt, x_size = in_x_size)
+        
+        o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_a, in_x_size)
+      else: # NB here recuse value is mostly -2, sometimes -3
+        # this is the next sphere 
+        pt = matrix_mult_vector(M_rot, pt_save_for_later)
+        pt = pt[0]/pt[1]  
+        pt = cmath.log(pt)
+        pt = complex(pt.real + log(zoom_factor) * zoom_loop_value, pt.imag)
+        pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff, pt.imag) 
+        pt = cmath.exp(pt)
+        pt = [pt, 1] #back to projective coordinates
+        pt = matrix_mult_vector(M_rot_inv, pt)
+        pt = sphere_from_CP1(pt)
+        pt = angles_from_sphere(pt)
+        pt = pixel_coords_from_angles(pt, x_size = in_x_size)
+        o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
         
 
   out_image.save(save_filename)
