@@ -225,8 +225,7 @@ def apply_SL2C_elt_to_image(M, source_image_filename, out_x_size = None, save_fi
       o_im[i,j] = get_interpolated_pixel_colour(pt, s_im, x_size = in_x_size)
   out_image.save(save_filename)
 
-
-def droste_effect_original(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_image_filename, out_x_size = None, twist = False, zoom_loop_value = 0.0, save_filename = "sphere_transforms_test.png"):
+def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_image_filename, out_x_size = None, twist = False, zoom_loop_value = 0.0, save_filename = "sphere_transforms_test.png"):
   """produces a zooming Droste effect image from an equirectangular source image"""
   # The source image should be a composite of the original image together with a zoomed version, 
   # fit inside a picture frame or similar in the original image
@@ -279,113 +278,6 @@ def droste_effect_original(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, s
 
   out_image.save(save_filename)
 
-
-def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_image_filename_A, source_image_filename_B, out_x_size = None, twist = False, zoom_loop_value = 0.0, save_filename = "sphere_transforms_test.png"):
-  """produces a zooming Droste effect image from an equirectangular source image"""
-  # The source image should be a composite of the original image together with a zoomed version, 
-  # fit inside a picture frame or similar in the original image
-  source_image_a = Image.open(source_image_filename_A)
-  source_image_b = Image.open(source_image_filename_B)
-  
-  s_im_a = source_image_a.load()
-  s_im_b = source_image_b.load()
-  
-  in_x_size, in_y_size = source_image_a.size
-  
-  M_rot = rotate_pixel_coords_p_to_q(zoom_center_pixel_coords, (0,0), x_size = in_x_size)
-  M_rot_inv = matrix2_inv(M_rot)
-  if out_x_size == None:
-    out_x_size, out_y_size = source_image.size
-  else:
-    out_y_size = out_x_size/2
-  out_image = Image.new("RGB", (out_x_size, out_y_size))
-  o_im = out_image.load()
-
-  for i in range(out_x_size): 
-    for j in range(out_y_size):
-      pt = (i,j)
-      pt = angles_from_pixel_coords(pt, x_size = out_x_size)
-      pt = sphere_from_angles(pt)
-      
-      # keep the point for later in case we shouldn't be recusing
-      pt_save_for_later = CP1_from_sphere(pt)
-      pt = CP1_from_sphere(pt)
-      
-      pt_temp = matrix_mult_vector(M_rot, pt)
-      pt_temp = pt_temp[0]/pt_temp[1]
-      pt_temp = cmath.log(pt_temp)
-      # print ((pt_temp.real + zoom_cutoff) // log(zoom_factor))
-      
-      #  boolean that switches on/off recursion
-      recurse_value = (pt_temp.real + zoom_cutoff) // log(zoom_factor)
-      # values -1 to 0 are the current sphere, values 0 to 1 are the next sphere. < -1 is earlier spheres, > 1 are future spheres
-      dont_recurse_into_image = (recurse_value < -1.0 or recurse_value > 0.0)
-      
-      if(not(dont_recurse_into_image)):
-        pt = matrix_mult_vector(M_rot, pt)
-      
-        # if ever you don't know how to do some operation in complex projective coordinates, it's almost certainly 
-        # safe to just switch back to ordinary complex numbers by pt = pt[0]/pt[1]. The only danger is if pt[1] == 0, 
-        # or is near enough to cause floating point errors. In this application, you are probably fine unless you 
-        # make some very specific choices of where to zoom to etc. 
-        pt = pt[0]/pt[1]  
-        pt = cmath.log(pt)
-
-        # zoom_loop_value is between 0 and 1, vary this from 0.0 to 1.0 to animate frames zooming into the droste image
-        pt = complex(pt.real + log(zoom_factor) * zoom_loop_value, pt.imag) 
-        
-        # zoom_cutoff alters the slice of the input image that we use, so that it covers mostly the original image, together with 
-        # some of the zoomed image that was composited with the original. The slice needs to cover the seam between the two
-        # (i.e. the picture frame you are using, but should cover as little as possible of the zoomed version of the image.
-      
-        #even = ((pt.real + zoom_cutoff) // log(zoom_factor)) % 2 == 0
-      
-        pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff, pt.imag)
-        pt = cmath.exp(pt)
-        pt = [pt, 1] #back to projective coordinates
-      
-        pt = matrix_mult_vector(M_rot_inv, pt)
-      
-      pt = sphere_from_CP1(pt)
-      pt = angles_from_sphere(pt)
-      pt = pixel_coords_from_angles(pt, x_size = in_x_size)
-    
-      if(recurse_value > -1 and recurse_value <= 0):
-        o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_a, in_x_size)
-      elif (recurse_value > 0 and recurse_value <= 1):
-        o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
-      elif (recurse_value > 1.0):
-        # this is previous spheres. We need to warp the sphere so it animated correctly, so we use the above but without the line that does the recursion
-        pt = matrix_mult_vector(M_rot, pt_save_for_later)
-        pt = pt[0]/pt[1]  
-        pt = cmath.log(pt)
-        pt = complex(pt.real + log(zoom_factor) * zoom_loop_value, pt.imag)
-        pt = cmath.exp(pt)
-        pt = [pt, 1] #back to projective coordinates
-        pt = matrix_mult_vector(M_rot_inv, pt)
-        pt = sphere_from_CP1(pt)
-        pt = angles_from_sphere(pt)
-        pt = pixel_coords_from_angles(pt, x_size = in_x_size)
-        
-        o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_a, in_x_size)
-      else: # NB here recuse value is mostly -2, sometimes -3
-        # this is the next sphere 
-        pt = matrix_mult_vector(M_rot, pt_save_for_later)
-        pt = pt[0]/pt[1]  
-        pt = cmath.log(pt)
-        pt = complex(pt.real + log(zoom_factor) * zoom_loop_value, pt.imag)
-        pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff, pt.imag) 
-        pt = cmath.exp(pt)
-        pt = [pt, 1] #back to projective coordinates
-        pt = matrix_mult_vector(M_rot_inv, pt)
-        pt = sphere_from_CP1(pt)
-        pt = angles_from_sphere(pt)
-        pt = pixel_coords_from_angles(pt, x_size = in_x_size)
-        o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_b, in_x_size)
-        
-
-  out_image.save(save_filename)
-
 def batch_transform_frames(in_dirname, out_dirname, M_func, frame_num_range = None, func_range = None, out_x_size = None):
   """transform a directory of numbered frame images according to a given function, that outputs a matrix as a function of time"""
   ### assumes num_frames is a three digit number
@@ -435,8 +327,8 @@ if __name__ == "__main__":
 
   ###### Apply transformations to single frames
 
-  #M = zoom_in_on_pixel_coords((360,179.5), 2, x_size = 720) 
-  #apply_SL2C_elt_to_image( M, 'equirectangular_test_image.png', save_filename = 'scaled_test_image.png' )
+  M = zoom_in_on_pixel_coords((360,179.5), 2, x_size = 720) 
+  apply_SL2C_elt_to_image( M, 'equirectangular_test_image.png', save_filename = 'scaled_test_image.png' )
 
   # M = rotate_around_axis_pixel_coord_p((360,179.5), pi/8, x_size = 720)
   # apply_SL2C_elt_to_image( M, 'equirectangular_test_image.png', save_filename = 'rotated_test_image.png' )
@@ -461,30 +353,6 @@ if __name__ == "__main__":
   #   zoom_loop_value = float(i)/float(num_frames)
   #   droste_effect((2650,1300), 7.3, 1.0, '(elevr+h)x2_one_zoom_7.3.png', out_x_size = 1920, twist = False, zoom_loop_value = zoom_loop_value, save_filename = "droste_straight_anim_frames/droste_anim_straight_" + str(i).zfill(3) + ".png")
   #   droste_effect((2650,1300), 7.3, 1.0, '(elevr+h)x2_one_zoom_7.3.png', out_x_size = 1920, twist = True, zoom_loop_value = zoom_loop_value, save_filename = "droste_twist_anim_frames/droste_anim_twist_" + str(i).zfill(3) + ".png")
-  
-  
-  #ME: 
-  # second argument controls how big the circle into the next space is (Actually, I think it's how zoomed in it is at the start (i.e. how much along the path we've already moved) - this is based on the line where zoom_factor is added to the real component before it's multiplied by zoom_loop_value (which controls how far through the animation we are))
-  # third arg... controls how zoomed it is on the other side, maybe?
-  
-  '''
-  num_frames = 10
-  for i in range(num_frames):
-    print float(i)
-    zoom_loop_value = (float(i)/float(num_frames)) * -1.0
-    droste_effect((2316,973), 4.0, 1.0, 'sissinghurst/original/S11_LymeWalkBottom.jpg', 'sissinghurst/original/S10_LymeWalkMid.jpg', out_x_size = 1000, twist = False, zoom_loop_value = zoom_loop_value, save_filename = "sissinghurst/anim/big_droste_anim_straight_" + str(i).zfill(3) + ".png")
-  '''
-  
-  num_frames = 10
-  for i in range(1, num_frames):
-    #zoom_loop_value = float(i)/float(num_frames)
-    zoom_loop_value = float(0.5) # walf way through transition
-    zoom_factor = 4 + float(i) * 0.5
-    print zoom_factor
-    #droste_effect((2650,1300), float(i), 1.0, '(elevr+h)x2_one_zoom_7.3.png', out_x_size = 1920, twist = False, zoom_loop_value = zoom_loop_value, save_filename = "droste_straight_anim_frames/droste_anim_straight_zoomfactorVariablePoint0_" + str(i).zfill(3) + ".png")
-    droste_effect((2316,973), zoom_factor, 1.0, 'sissinghurst/original/S11_LymeWalkBottom.jpg', 'sissinghurst/original/S10_LymeWalkMid.jpg', out_x_size = 1000, twist = False, zoom_loop_value = zoom_loop_value, save_filename = "playing_with_params/zoom_factor_" + str(i).zfill(3) + ".png")
-    #droste_effect_original((2650,1300), 7.3, 1.0 + (0.1 * float(i)), '(elevr+h)x2_one_zoom_7.3.png', out_x_size = 1000, twist = False, zoom_loop_value = zoom_loop_value, save_filename = "playing_with_params/zoom_cutoff_" + str(i).zfill(3) + ".png")
-
 
 
 
