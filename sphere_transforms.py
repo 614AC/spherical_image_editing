@@ -13,6 +13,8 @@ from math import *
 from vectors_and_matrices import vector, dot, cross, matrix2_inv, matrix_mult, matrix_mult_vector
 from PIL import Image
 import cmath
+from datetime import datetime
+import uuid
 
 def angles_from_pixel_coords(point, x_size = 1000):
   """map from pixel coords to (0, 2*pi) x (-pi/2, pi/2) rectangle"""
@@ -178,6 +180,33 @@ def apply_SL2C_elt_to_image(M, source_image_filename, out_x_size = None, save_fi
       pt = pixel_coords_from_angles(pt, x_size = in_x_size)
       o_im[i,j] = get_interpolated_pixel_colour(pt, s_im, x_size = in_x_size)
   out_image.save(save_filename)
+  
+def rotate_equirect_image(image_filename, from_x, to_x):
+  s_img = Image.open(image_filename)
+  dist = abs(from_x - to_x)
+  
+  l_box = (0,0,0,0)
+  r_box = (0,0,0,0)
+  
+  if(from_x < to_x):
+    l_box = (0, 0, s_img.size[0] - dist, s_img.size[1])
+    r_box = (s_img.size[0] - dist + 1,0,s_img.size[0],s_img.size[1])
+    print l_box
+    print r_box
+  else:
+    l_box = (0, 0, dist, s_img.size[1])
+    r_box = (dist + 1, 0, s_img.size[0], s_img.size[1])
+  
+  right = s_img.crop(r_box)
+  left = s_img.crop(l_box)
+  
+  new_im = Image.new('RGB', s_img.size)
+  new_im.paste(right,(0,0))
+  new_im.paste(left,(r_box[2]-r_box[0],0))
+  
+  temp_file_name = str(uuid.uuid4()) + ".png"
+  new_im.save(temp_file_name,"PNG")
+  return temp_file_name
 
 def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_image_filename_A, source_image_filename_B, out_x_size = None, zoom_loop_value = 0.0, save_filename = "sphere_transforms_test.png"):
   """produces a zooming Droste effect image from an equirectangular source image"""
@@ -226,7 +255,7 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
         pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff, pt.imag)
       else:
         # this is "future spheres"
-        pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff +  floor(recurse_value), pt.imag)
+        pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff - 2.3, pt.imag)
       
       pt = cmath.exp(pt)
       pt = [pt, 1] #back to projective coordinates
@@ -240,7 +269,7 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
       else:
         o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_B, in_x_size)
 
-  print save_filename
+  print datetime.now().strftime('%H:%M:%S') + ": finished " + save_filename
   out_image.save(save_filename)
 
 
@@ -250,11 +279,30 @@ if __name__ == "__main__":
   #M = zoom_in_on_pixel_coords((360,179.5), 2, x_size = 720) 
   #apply_SL2C_elt_to_image( M, 'equirectangular_test_image.png', save_filename = 'scaled_test_image.png' )
 
-  num_frames = 4
-  for i in range(num_frames):
-    zoom_loop_value = -1 * float(i)/float(num_frames)
-    droste_effect((2650,1300), 6.8, 1.0, '(elevr+h)x2_one_zoom_7.3.png', 'equirect_square.jpg', out_x_size = 1000, zoom_loop_value = zoom_loop_value, save_filename = "droste_straight_anim_frames/droste_anim_straight_" + str(i).zfill(3) + ".png")
+  image_A = './buddha/37e2e38392994f83b67c96a6c9e71e1f_pano.jpg'
+  zoom_point_A = (1464,1024)
+  image_B = './buddha/7c79262fda81415fa384036bd04b30b3_pano.jpg'
+  zoom_point_B = (3841,1024)
+  
+  rotated_image_B = image_B
+  if(zoom_point_A != zoom_point_B):
+    rotated_image_B = rotate_equirect_image(image_B, zoom_point_B[0], zoom_point_A[0])
+  
+  rangeWithEnd = lambda start, end: range(start, end+1)
+  num_frames = 90
+  print "start: " + datetime.now().strftime('%H:%M:%S')
+  for i in rangeWithEnd(0,num_frames):
+    zoom_loop_value = -1 * float(i) / float(num_frames)
+    
+    zoom_factor = 10
+    zoom_cutoff = 2.0
+    
+    droste_effect(zoom_point_A, zoom_factor, zoom_cutoff, image_A, rotated_image_B, out_x_size = 4096, zoom_loop_value = zoom_loop_value, save_filename = "./buddha/zoom_factor_10_sv_2p3/droste_anim_straight_" + str(i).zfill(3) + ".png")
+    
+    #droste_effect((1350,1024), zoom_factor, zoom_cutoff, './buddha/656d4da476344d2f97ebc35b269f4177_pano.jpg', './buddha/37e2e38392994f83b67c96a6c9e71e1f_pano.jpg', out_x_size = 4096, zoom_loop_value = zoom_loop_value, save_filename = "./buddha/anim/droste_anim_straight_" + str(i).zfill(3) + ".png")
   #  droste_effect((2650,1300), 7.3, 1.0, '(elevr+h)x2_one_zoom_7.3.png', out_x_size = 1920, twist = True, zoom_loop_value = zoom_loop_value, save_filename = "droste_twist_anim_frames/droste_anim_twist_" + str(i).zfill(3) + ".png")
+  
+  
 
 
 
