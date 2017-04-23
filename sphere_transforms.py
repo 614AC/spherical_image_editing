@@ -208,7 +208,7 @@ def rotate_equirect_image(image_filename, from_x, to_x):
   new_im.save(temp_file_name,"PNG")
   return temp_file_name
 
-def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_image_filename_A, source_image_filename_B, out_x_size = None, zoom_loop_value = 0.0, save_filename = "sphere_transforms_test.png"):
+def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_image_filename_A, source_image_filename_B, out_x_size = None, zoom_loop_value = 0.0, save_filename = "sphere_transforms_test.png", subtract_value_1 = 1.4, subtract_value_2 = 0.0):
   """produces a zooming Droste effect image from an equirectangular source image"""
   source_image_A = Image.open(source_image_filename_A)
   s_im_A = source_image_A.load()
@@ -253,9 +253,15 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
       elif(floor(recurse_value) == -1.0):
         # this is the "next sphere"
         pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff, pt.imag)
+      elif(floor(recurse_value) == -2.0):
+        pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff - subtract_value_1, pt.imag)
+      elif(floor(recurse_value) == -3.0):
+        subtract_value_2or1 = subtract_value_1 if subtract_value_2 == 0.0 else subtract_value_2
+        pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff - subtract_value_2or1, pt.imag)
       else:
         # this is "future spheres"
-        pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff - 1.4, pt.imag)
+        subtract_value = subtract_value_1 * 3.0
+        pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff - subtract_value, pt.imag)
       
       pt = cmath.exp(pt)
       pt = [pt, 1] #back to projective coordinates
