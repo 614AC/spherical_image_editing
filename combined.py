@@ -9,8 +9,8 @@ def one_shot(output_folder, pano_A_filename, pano_B_filename, pano_A_zoom_centre
   num_frames = 4
   image_width = 4096
   image_height = image_width / 2
-  subtract_amount_1 = 1.4
-  subtract_amount_2 = 2.8
+  subtract_amount_1 = subtract_amount
+  subtract_amount_2 = subtract_amount * 2
   
   # create the output folder
   if not os.path.exists(output_folder):
@@ -47,6 +47,7 @@ def one_shot(output_folder, pano_A_filename, pano_B_filename, pano_A_zoom_centre
     bubble_anim(pano_B_bubble,pano_B_no_bubble, bubble_B_position, bubble_B_diam, float(i)/num_frames, output_folder + "/out_bubble_anim_" + str(int(num_frames - i)).zfill(3) + ".png")
 
 if __name__ == '__main__':
+  '''
   zoom_factor = 4
   zoom_cutoff = 1.2
   subtract_amount = 1.4
@@ -61,3 +62,23 @@ if __name__ == '__main__':
   pano_B_filename = './buddha/7c79262fda81415fa384036bd04b30b3_pano.jpg'
   
   one_shot('./123to456', pano_A_filename, pano_B_filename, pano_A_zoom_centre, pano_B_zoom_centre, bubble_in_diameter, bubble_out_diameter, zoom_factor, zoom_cutoff, subtract_amount)
+  '''
+  
+  zoom_factor = 4
+  zoom_cutoff = 1.2
+  subtract_amount = 1.4
+  
+  pano_A_zoom_centre = (1850,1024)
+  pano_B_zoom_centre = (3420,1024)
+
+  bubble_out_diameter = 1808.0
+  bubble_in_diameter = 760.0
+
+  pano_A_filename = './buddha/7c79262fda81415fa384036bd04b30b3_pano.jpg'
+  pano_B_filename = './buddha/37e2e38392994f83b67c96a6c9e71e1f_pano.jpg'
+  
+  one_shot('./buddha/one_shot_generation/7c792_to_37e2e', pano_A_filename, pano_B_filename, pano_A_zoom_centre, pano_B_zoom_centre, bubble_in_diameter, bubble_out_diameter, zoom_factor, zoom_cutoff, subtract_amount)
+  
+  
+  
+  
