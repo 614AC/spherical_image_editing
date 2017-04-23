@@ -255,7 +255,7 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
         pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff, pt.imag)
       else:
         # this is "future spheres"
-        pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff - 2.3, pt.imag)
+        pt = complex((pt.real + zoom_cutoff) % log(zoom_factor) - zoom_cutoff - 1.4, pt.imag)
       
       pt = cmath.exp(pt)
       pt = [pt, 1] #back to projective coordinates
@@ -291,13 +291,13 @@ if __name__ == "__main__":
   rangeWithEnd = lambda start, end: range(start, end+1)
   num_frames = 90
   print "start: " + datetime.now().strftime('%H:%M:%S')
-  for i in rangeWithEnd(0,num_frames):
+  for i in rangeWithEnd(0,1):
     zoom_loop_value = -1 * float(i) / float(num_frames)
     
-    zoom_factor = 10
-    zoom_cutoff = 2.0
+    zoom_factor = 4
+    zoom_cutoff = 1.2
     
-    droste_effect(zoom_point_A, zoom_factor, zoom_cutoff, image_A, rotated_image_B, out_x_size = 4096, zoom_loop_value = zoom_loop_value, save_filename = "./buddha/zoom_factor_10_sv_2p3/droste_anim_straight_" + str(i).zfill(3) + ".png")
+    droste_effect(zoom_point_A, zoom_factor, zoom_cutoff, image_A, rotated_image_B, out_x_size = 4096, zoom_loop_value = zoom_loop_value, save_filename = "./buddha/zf4_sv1p4_zc1p2/droste_anim_straight_" + str(i).zfill(3) + ".png")
     
     #droste_effect((1350,1024), zoom_factor, zoom_cutoff, './buddha/656d4da476344d2f97ebc35b269f4177_pano.jpg', './buddha/37e2e38392994f83b67c96a6c9e71e1f_pano.jpg', out_x_size = 4096, zoom_loop_value = zoom_loop_value, save_filename = "./buddha/anim/droste_anim_straight_" + str(i).zfill(3) + ".png")
   #  droste_effect((2650,1300), 7.3, 1.0, '(elevr+h)x2_one_zoom_7.3.png', out_x_size = 1920, twist = True, zoom_loop_value = zoom_loop_value, save_filename = "droste_twist_anim_frames/droste_anim_twist_" + str(i).zfill(3) + ".png")
