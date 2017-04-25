@@ -1,0 +1,13 @@
+TODO:
+
+- line up / kick off generation of images for network
+
+- line from rotation should be removed (maybe not essential now)
+
+
+Run to join into mp4 file:
+
+echo "file './in_bubble_anim_%03d.png'" > concat_list.txt
+echo "file './droste_anim_%03d.png'" >> concat_list.txt
+echo "file './out_bubble_anim_%03d.png'" >> concat_list.txt
+ffmpeg -r 30 -f concat -safe 0 -i concat_list.txt -vcodec libx264 -crf 25  -pix_fmt yuv420p joined.mp4
