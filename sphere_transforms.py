@@ -190,19 +190,17 @@ def rotate_equirect_image(image_filename, from_x, to_x):
   
   if(from_x < to_x):
     l_box = (0, 0, s_img.size[0] - dist, s_img.size[1])
-    r_box = (s_img.size[0] - dist + 1,0,s_img.size[0],s_img.size[1])
-    print l_box
-    print r_box
+    r_box = (s_img.size[0] - dist,0,s_img.size[0],s_img.size[1])
   else:
     l_box = (0, 0, dist, s_img.size[1])
-    r_box = (dist + 1, 0, s_img.size[0], s_img.size[1])
+    r_box = (dist, 0, s_img.size[0], s_img.size[1])
   
   right = s_img.crop(r_box)
   left = s_img.crop(l_box)
   
   new_im = Image.new('RGB', s_img.size)
   new_im.paste(right,(0,0))
-  new_im.paste(left,(r_box[2]-r_box[0],0))
+  new_im.paste(left,(right.size[0],0))
   
   temp_file_name = str(uuid.uuid4()) + ".png"
   new_im.save(temp_file_name,"PNG")
@@ -285,6 +283,9 @@ if __name__ == "__main__":
   #M = zoom_in_on_pixel_coords((360,179.5), 2, x_size = 720) 
   #apply_SL2C_elt_to_image( M, 'equirectangular_test_image.png', save_filename = 'scaled_test_image.png' )
 
+  rotate_equirect_image('./buddha/37e2e38392994f83b67c96a6c9e71e1f_pano.jpg', 4000, 100)
+
+  '''
   image_A = './buddha/37e2e38392994f83b67c96a6c9e71e1f_pano.jpg'
   zoom_point_A = (1464,1024)
   image_B = './buddha/7c79262fda81415fa384036bd04b30b3_pano.jpg'
@@ -308,7 +309,7 @@ if __name__ == "__main__":
     #droste_effect((1350,1024), zoom_factor, zoom_cutoff, './buddha/656d4da476344d2f97ebc35b269f4177_pano.jpg', './buddha/37e2e38392994f83b67c96a6c9e71e1f_pano.jpg', out_x_size = 4096, zoom_loop_value = zoom_loop_value, save_filename = "./buddha/anim/droste_anim_straight_" + str(i).zfill(3) + ".png")
   #  droste_effect((2650,1300), 7.3, 1.0, '(elevr+h)x2_one_zoom_7.3.png', out_x_size = 1920, twist = True, zoom_loop_value = zoom_loop_value, save_filename = "droste_twist_anim_frames/droste_anim_twist_" + str(i).zfill(3) + ".png")
   
-  
+  '''
 
 
 

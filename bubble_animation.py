@@ -13,17 +13,17 @@ def rotate_pano_image(s_img, from_x, to_x):
   
   if(from_x < to_x):
     l_box = (0, 0, s_img.size[0] - dist, s_img.size[1])
-    r_box = (s_img.size[0] - dist + 1,0,s_img.size[0],s_img.size[1])
+    r_box = (s_img.size[0] - dist,0,s_img.size[0],s_img.size[1])
   else:
     l_box = (0, 0, dist, s_img.size[1])
-    r_box = (dist + 1, 0, s_img.size[0], s_img.size[1])
+    r_box = (dist, 0, s_img.size[0], s_img.size[1])
   
   right = s_img.crop(r_box)
   left = s_img.crop(l_box)
   
   new_im = Image.new('RGB', s_img.size)
   new_im.paste(right,(0,0))
-  new_im.paste(left,(r_box[2]-r_box[0],0))
+  new_im.paste(left,(right.size[0],0))
   
   return new_im
 
