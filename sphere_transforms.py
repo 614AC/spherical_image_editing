@@ -235,7 +235,7 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
       # safe to just switch back to ordinary complex numbers by pt = pt[0]/pt[1]. The only danger is if pt[1] == 0, 
       # or is near enough to cause floating point errors. In this application, you are probably fine unless you 
       # make some very specific choices of where to zoom to etc. 
-      pt = pt[0]/pt[1]  
+      pt = pt[0]/pt[1]
       pt = cmath.log(pt)
 
       # zoom_loop_value is between 0 and 1, vary this from 0.0 to 1.0 to animate frames zooming into the droste image
