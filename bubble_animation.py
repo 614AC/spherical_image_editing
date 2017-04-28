@@ -39,7 +39,7 @@ def bubble_anim(image_with_bubble_filename, image_without_bubble_filename, bubbl
   
   need_to_shift_image = False
   move_amount = 0
-  if((bubble_position[0] + bubble_radius) > pano_image.size[0]):
+  if(((bubble_position[0] + bubble_radius) > pano_image.size[0]) or ((bubble_position[0] - bubble_radius) < 0)):
     need_to_shift_image = True
     move_to = pano_image.size[0] - bubble_radius
     move_amount = bubble_position[0] - move_to
