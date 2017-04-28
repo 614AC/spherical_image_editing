@@ -46,23 +46,12 @@ def one_shot(output_folder, pano_A_filename, pano_B_filename, pano_A_zoom_centre
   for i in range(int(num_frames),1,-1):
     bubble_anim(pano_B_bubble,pano_B_no_bubble, bubble_B_position, bubble_B_diam, float(i)/num_frames, output_folder + "/out_bubble_anim_" + str(int(num_frames - i)).zfill(3) + ".png")
 
-if __name__ == '__main__':
-  '''
-  zoom_factor = 4
-  zoom_cutoff = 1.2
-  subtract_amount = 1.4
-  
-  pano_A_zoom_centre = (1464,1024)
-  pano_B_zoom_centre = (3485,1024)
 
-  bubble_out_diameter = 1808.0
-  bubble_in_diameter = 760.0
+def start_one_shot_generation(pano_A_zoom_centre, pano_B_zoom_centre, pano_folder, pano_a_short_name, pano_b_short_name):
+  folder_contents = os.listdir(pano_folder)
+  pano_a_filename = next(obj for obj in folder_contents if obj.startswith(pano_a_short_name) and obj.endswith("_pano.jpg"))
+  pano_b_filename = next(obj for obj in folder_contents if obj.startswith(pano_b_short_name) and obj.endswith("_pano.jpg"))
   
-  pano_A_filename = './buddha/37e2e38392994f83b67c96a6c9e71e1f_pano.jpg'
-  pano_B_filename = './buddha/7c79262fda81415fa384036bd04b30b3_pano.jpg'
-  
-  one_shot('./123to456', pano_A_filename, pano_B_filename, pano_A_zoom_centre, pano_B_zoom_centre, bubble_in_diameter, bubble_out_diameter, zoom_factor, zoom_cutoff, subtract_amount)
-  '''
   # presets
   zoom_factor = 4
   zoom_cutoff = 1.2
@@ -71,14 +60,19 @@ if __name__ == '__main__':
   bubble_in_diameter = 760.0
   
   # required
-  pano_A_zoom_centre = (1850,1024)
-  pano_B_zoom_centre = (3420,1024)
-  pano_A_filename = './buddha/7c79262fda81415fa384036bd04b30b3_pano.jpg'
-  pano_B_filename = './buddha/37e2e38392994f83b67c96a6c9e71e1f_pano.jpg'
-  folder_name = './buddha/one_shot_generation/7c792_to_37e2e'
+  pano_A_zoom_centre = (pano_A_zoom_centre,1024)
+  pano_B_zoom_centre = (pano_B_zoom_centre,1024)
+  pano_A_filepath = pano_folder + pano_a_filename
+  pano_B_filepath = pano_folder + pano_b_filename
+  folder_name = pano_folder + 'one_shot_generation/' + pano_a_short_name + "_to_" + pano_b_short_name
   
-  one_shot(folder_name, pano_A_filename, pano_B_filename, pano_A_zoom_centre, pano_B_zoom_centre, bubble_in_diameter, bubble_out_diameter, zoom_factor, zoom_cutoff, subtract_amount)
-  
-  
-  
-  
+  try:
+    one_shot(folder_name, pano_A_filepath, pano_B_filepath, pano_A_zoom_centre, pano_B_zoom_centre, bubble_in_diameter, bubble_out_diameter, zoom_factor, zoom_cutoff, subtract_amount)
+  except:
+    print("Unexpected error:", sys.exc_info()[0])
+    print("when generating " + folder_name)
+
+
+if __name__ == '__main__':
+  # required
+  start_one_shot_generation(1850, 3420, './buddha/', '7c792', '37e2e')
