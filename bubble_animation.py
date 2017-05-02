@@ -29,7 +29,7 @@ def rotate_pano_image(s_img, from_x, to_x):
 
 
 def bubble_anim(image_with_bubble_filename, image_without_bubble_filename, bubble_position, bubble_diameter, t, output_filename):
-  print t
+  # print t
   
   bubble_radius = int(floor(bubble_diameter / 2))
   bubble_size = bubble_diameter * t;

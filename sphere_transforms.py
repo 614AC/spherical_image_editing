@@ -15,6 +15,7 @@ from PIL import Image
 import cmath
 from datetime import datetime
 import uuid
+import sys
 
 def angles_from_pixel_coords(point, x_size = 1000):
   """map from pixel coords to (0, 2*pi) x (-pi/2, pi/2) rectangle"""
@@ -273,7 +274,8 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
       else:
         o_im[i,j] = get_interpolated_pixel_colour(pt, s_im_B, in_x_size)
 
-  print datetime.now().strftime('%H:%M:%S') + ": finished " + save_filename
+  sys.stdout.write(" . " + datetime.now().strftime('%H:%M:%S'))
+  # print datetime.now().strftime('%H:%M:%S') + ": finished " + save_filename
   out_image.save(save_filename)
 
 
