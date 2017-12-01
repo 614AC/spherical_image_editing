@@ -207,8 +207,8 @@ def rotate_equirect_image(image_filename, from_x, to_x):
   new_im.save(temp_file_name,"PNG")
   return temp_file_name
 
-def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_image_filename_A, source_image_filename_B, out_x_size = None, zoom_loop_value = 0.0, save_filename = "sphere_transforms_test.png"):
-  """produces a zooming Droste effect image from an equirectangular source image"""
+def generate_image(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_image_filename_A, source_image_filename_B, out_x_size = None, zoom_loop_value = 0.0, save_filename = "sphere_transforms_test.png"):
+  """produces a zooming effect image from one equirectangular image into another equirectangular image"""
   source_image_A = Image.open(source_image_filename_A)
   s_im_A = source_image_A.load()
   source_image_B = Image.open(source_image_filename_B)
@@ -237,7 +237,7 @@ def droste_effect(zoom_center_pixel_coords, zoom_factor, zoom_cutoff, source_ima
       pt = pt[0]/pt[1]
       pt = cmath.log(pt)
 
-      # zoom_loop_value is between 0 and 1, vary this from 0.0 to 1.0 to animate frames zooming into the droste image
+      # zoom_loop_value is between 0 and 1, vary this from 0.0 to 1.0 to animate frames zooming into the transition animation image
       pt = complex(pt.real + log(zoom_factor) * zoom_loop_value, pt.imag) 
       
       recurse_value = (pt.real + zoom_cutoff) / log(zoom_factor)
@@ -284,32 +284,5 @@ if __name__ == "__main__":
   #apply_SL2C_elt_to_image( M, 'equirectangular_test_image.png', save_filename = 'scaled_test_image.png' )
 
   rotate_equirect_image('./buddha/37e2e38392994f83b67c96a6c9e71e1f_pano.jpg', 4000, 100)
-
-  '''
-  image_A = './buddha/37e2e38392994f83b67c96a6c9e71e1f_pano.jpg'
-  zoom_point_A = (1464,1024)
-  image_B = './buddha/7c79262fda81415fa384036bd04b30b3_pano.jpg'
-  zoom_point_B = (3841,1024)
-  
-  rotated_image_B = image_B
-  if(zoom_point_A != zoom_point_B):
-    rotated_image_B = rotate_equirect_image(image_B, zoom_point_B[0], zoom_point_A[0])
-  
-  rangeWithEnd = lambda start, end: range(start, end+1)
-  num_frames = 90
-  print "start: " + datetime.now().strftime('%H:%M:%S')
-  for i in rangeWithEnd(0,1):
-    zoom_loop_value = -1 * float(i) / float(num_frames)
-    
-    zoom_factor = 4
-    zoom_cutoff = 1.2
-    
-    droste_effect(zoom_point_A, zoom_factor, zoom_cutoff, image_A, rotated_image_B, out_x_size = 4096, zoom_loop_value = zoom_loop_value, save_filename = "./buddha/zf4_sv1p4_zc1p2/droste_anim_straight_" + str(i).zfill(3) + ".png")
-    
-    #droste_effect((1350,1024), zoom_factor, zoom_cutoff, './buddha/656d4da476344d2f97ebc35b269f4177_pano.jpg', './buddha/37e2e38392994f83b67c96a6c9e71e1f_pano.jpg', out_x_size = 4096, zoom_loop_value = zoom_loop_value, save_filename = "./buddha/anim/droste_anim_straight_" + str(i).zfill(3) + ".png")
-  #  droste_effect((2650,1300), 7.3, 1.0, '(elevr+h)x2_one_zoom_7.3.png', out_x_size = 1920, twist = True, zoom_loop_value = zoom_loop_value, save_filename = "droste_twist_anim_frames/droste_anim_twist_" + str(i).zfill(3) + ".png")
-  
-  '''
-
 
 
