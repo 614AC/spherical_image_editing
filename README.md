@@ -33,10 +33,10 @@ start_one_shot_generation(pano_A_zoom_centre, pano_B_zoom_centre, pano_folder, p
 Note that this function relies on several assumptions:
 
 * that your files are called '<pano_a_short_name>_pano.jpg', and are stored in the pano_folder
-* that you want 90 frames in total output
+* that you want 90 frames for Mobius animation output
 * that you want an output frame size of 4096
 * that your input images are 4096 * 2048
 
-This function also generated bubble in and bubble out animations. The bubble in animation animates the destination panorama into the origin panorama, while the bubble out animation animated the origin panorama out of the destination panorama. The bubble in animation can be used at the beginning of the animation to visually explain where the destination panorama has come from, while the bubble out animation can be used at the end to visually explain where the origin panorama went.
+This function also generates bubble in and bubble out animations. The bubble in animation animates the destination panorama into the origin panorama, while the bubble out animation animated the origin panorama out of the destination panorama. The bubble in animation can be used at the beginning of the animation to visually explain where the destination panorama has come from, while the bubble out animation can be used at the end to visually explain where the origin panorama went.
 
 These images can then be turned into a video via ffmpeg.
