@@ -3,7 +3,8 @@ from scipy.interpolate import RectBivariateSpline
 from scipy.ndimage import map_coordinates
 from numpy import pi
 from PIL import Image
-import sys, uuid, datetime
+import sys, uuid
+from datetime import datetime
 
 
 def angles_from_pixel_coords(pts, size):
@@ -149,24 +150,42 @@ def clamp(pts, size):
     return out
 
 
-def get_pixel_color(pts, s_im, size):
-    """given pts in integers, get pixel colour on the source image as a vector in the colour cube"""
-    pts = clamp(pts, size)
-    s_im = np.asarray(s_im)
-    return s_im[pts[0], pts[1]]
+# def get_pixel_color(pts, s_im, size):
+#     """given pts in integers, get pixel colour on the source image as a vector in the colour cube"""
+#     pts = clamp(pts, size)
+#     s_im = np.asarray(s_im)
+#     return s_im[pts[0], pts[1]]
 
 
-def get_interpolated_pixel_color(pts, s_im, size):
-    """given pts in floats, linear interpolate pixel values nearby to get a good colour"""
-    pts = clamp(pts, size)
+def get_pixel_color(pt, s_im, size):
+    """given pt in integers, get pixel colour on the source image as a vector in the colour cube"""
+    pt = clamp(pt, size)
+    return np.array(s_im[pt[0], pt[1]])
 
-    s_im = np.atleast_3d(s_im)
-    ys, xs = size
-    ycoords, xcoords = np.arange(ys), np.arange(xs)
-    out = np.empty(pts.shape[1:] + (s_im.shape[-1], ), dtype=s_im.dtype)
-    for i in range(s_im.shape[-1]):  #loop over color channels
-        map_coordinates(s_im[..., i], pts, out[..., i], mode='nearest')
-    return out
+
+# def get_interpolated_pixel_color(pts, s_im, size):
+#     """given pts in floats, linear interpolate pixel values nearby to get a good colour"""
+#     pts = clamp(pts, size)
+
+#     s_im = np.atleast_3d(s_im)
+#     ys, xs = size
+#     ycoords, xcoords = np.arange(ys), np.arange(xs)
+#     out = np.empty(pts.shape[1:] + (s_im.shape[-1], ), dtype=s_im.dtype)
+#     for i in range(s_im.shape[-1]):  #loop over color channels
+#         map_coordinates(s_im[..., i], pts, out[..., i], mode='nearest')
+#     return out
+
+
+def get_interpolated_pixel_color(pt, s_im, size):
+    """given pt in floats, linear interpolate pixel values nearby to get a good colour"""
+    ### for proper production software, more than just the four pixels nearest to the input point coordinates should be used in many cases
+    x, y = int(np.floor(pt[0])), int(np.floor(
+        pt[1]))  #integer part of input coordinates
+    f, g = pt[0] - x, pt[1] - y  #fractional part of input coordinates
+    out_colour = (1-f)*( (1-g)*get_pixel_color([x,y], s_im, size) + g*get_pixel_color([x,y+1], s_im, size) ) \
+            +  f*( (1-g)*get_pixel_color([x+1,y], s_im, size) + g*get_pixel_color([x+1,y+1], s_im, size) )
+    out_colour = [int(round(coord)) for coord in out_colour]
+    return tuple(out_colour)
 
 
 def get_interpolated_pixel_color_rbspline(pts, s_im, size):
@@ -376,7 +395,7 @@ def generate_image(zoom_center_pixel_coords,
     in_x_size, in_y_size = source_image_A.size
 
     M_rot = rotate_pixel_coords_p_to_q(zoom_center_pixel_coords, (0, 0),
-                                       x_size=in_x_size)
+                                       (in_x_size, in_y_size))
     M_rot_inv = np.linalg.inv(M_rot)
     out_y_size = int(out_x_size / 2)
     out_image = Image.new("RGB", (out_x_size, out_y_size))
@@ -385,7 +404,7 @@ def generate_image(zoom_center_pixel_coords,
     for i in range(out_x_size):
         for j in range(out_y_size):
             pt = (i, j)
-            pt = angles_from_pixel_coords(pt, x_size=out_x_size)
+            pt = angles_from_pixel_coords(pt, (out_x_size, out_y_size))
             pt = sphere_from_angles(pt)
             pt = CP1_from_sphere(pt)
             pt = np.dot(M_rot, pt)
@@ -431,14 +450,16 @@ def generate_image(zoom_center_pixel_coords,
             pt = np.dot(M_rot_inv, pt)
             pt = sphere_from_CP1(pt)
             pt = angles_from_sphere(pt)
-            pt = pixel_coords_from_angles(pt, x_size=in_x_size)
+            pt = pixel_coords_from_angles(pt, (in_x_size, in_y_size))
 
             if (np.floor(recurse_value) >= 0):
                 o_im[i,
-                     j] = get_interpolated_pixel_color(pt, s_im_A, in_x_size)
+                     j] = get_interpolated_pixel_color(pt, s_im_A,
+                                                       (in_x_size, in_y_size))
             else:
                 o_im[i,
-                     j] = get_interpolated_pixel_color(pt, s_im_B, in_x_size)
+                     j] = get_interpolated_pixel_color(pt, s_im_B,
+                                                       (in_x_size, in_y_size))
 
     sys.stdout.write(" . " + datetime.now().strftime('%H:%M:%S'))
     # print datetime.now().strftime('%H:%M:%S') + ": finished " + save_filename
